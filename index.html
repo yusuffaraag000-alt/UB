@@ -645,4 +645,137 @@ closeBtn.addEventListener("click", () => {
 
 </style>
 </body>
+<!-- ---------- Buttons to toggle panels ---------- -->
+<style>
+.toggle-btn {
+  position: fixed;
+  top: 15px;
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 119, 255, 0.3);
+  transform: scale(1.2);
+}
+
+#toggleLeft { left: 10px; }
+#toggleRight { right: 10px; }
+#toggleInfo { right: 330px; }
+</style>
+
+<button id="toggleLeft" class="toggle-btn">⇦</button>
+<button id="toggleRight" class="toggle-btn">⇨</button>
+<button id="toggleInfo" class="toggle-btn">ℹ</button>
+
+<script>
+const leftPanel = document.getElementById("leftPanel");
+const rightPanel = document.getElementById("rightPanel");
+const infoPanelEl = document.getElementById("infoPanel");
+
+document.getElementById("toggleLeft").addEventListener("click", () => {
+  if(leftPanel.style.display === "none"){
+    leftPanel.style.display = "block";
+  } else {
+    leftPanel.style.display = "none";
+  }
+});
+
+document.getElementById("toggleRight").addEventListener("click", () => {
+  if(rightPanel.style.display === "none"){
+    rightPanel.style.display = "block";
+  } else {
+    rightPanel.style.display = "none";
+  }
+});
+
+document.getElementById("toggleInfo").addEventListener("click", () => {
+  if(infoPanelEl.style.display === "none" || infoPanelEl.style.display === ""){
+    infoPanelEl.style.display = "block";
+  } else {
+    infoPanelEl.style.display = "none";
+  }
+});
+</script>
+<!-- ---------- زر للتحكم في Gallery ---------- -->
+<button id="toggleGallery" class="toggle-btn" style="top: 60px; left: 50%; transform: translateX(-50%);">🖼️</button>
+
+<style>
+/* ترانزيشن سلس لجميع Panels و Gallery */
+#leftPanel, #rightPanel, #infoPanel, #galleryTopContainer {
+  transition: all 0.5s ease;
+}
+
+/* عند الإغلاق نستخدم transform لتأثير الانزلاق */
+.hidden-panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-20px);
+}
+</style>
+
+<script>
+// تعديل أزرار الفتح/الإغلاق لتعمل مع الترنزشن
+function togglePanel(panel) {
+  if(panel.classList.contains("hidden-panel")) {
+    panel.classList.remove("hidden-panel");
+  } else {
+    panel.classList.add("hidden-panel");
+  }
+}
+
+document.getElementById("toggleLeft").addEventListener("click", () => togglePanel(leftPanel));
+document.getElementById("toggleRight").addEventListener("click", () => togglePanel(rightPanel));
+document.getElementById("toggleInfo").addEventListener("click", () => togglePanel(infoPanelEl));
+document.getElementById("toggleGallery").addEventListener("click", () => togglePanel(document.getElementById("galleryTopContainer")));
+</script>
+<style>
+/* ---------- Responsive Viewer مع Expand عند إخفاء Panels ---------- */
+@media (max-width: 768px) {
+  #viewer {
+    transition: all 0.5s ease;
+  }
+  #viewer.expanded {
+    height: 70vh; /* يزيد ارتفاع الـ Viewer عند إخفاء Panels */
+  }
+}
+</style>
+
+<script>
+// تابع لتحديث حجم الـ Viewer حسب حالة Panels على الموبايل
+function updateViewerSize() {
+  if(window.innerWidth <= 768){
+    const panels = [leftPanel, rightPanel, infoPanelEl];
+    const allHidden = panels.every(p => !p.classList.contains("active-panel"));
+    if(allHidden){
+      document.getElementById("viewer").classList.add("expanded");
+    } else {
+      document.getElementById("viewer").classList.remove("expanded");
+    }
+  }
+}
+
+// تعديل أزرار Toggle لتحديث حجم Viewer عند الفتح والغلق
+document.getElementById("toggleLeft").addEventListener("click", updateViewerSize);
+document.getElementById("toggleRight").addEventListener("click", updateViewerSize);
+document.getElementById("toggleInfo").addEventListener("click", updateViewerSize);
+document.getElementById("toggleGallery").addEventListener("click", updateViewerSize);
+
+// تحديث تلقائي عند تغيير حجم الشاشة
+window.addEventListener("resize", updateViewerSize);
+
+// تفعيل التحديث عند تحميل الصفحة
+window.addEventListener("load", updateViewerSize);
+</script>
 </html>
