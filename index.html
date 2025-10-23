@@ -1,221 +1,677 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Histology - Veterinary Colon</title>
+  <title>Histology - Veterinary Bladder</title>
   <style>
-    body {
+    * {
       margin: 0;
-      font-family: "Poppins", sans-serif;
-      background: radial-gradient(circle at center, #0a0a0a, #000);
-      color: white;
-      overflow: hidden;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    canvas#bgCanvas {
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+      color: #ffffff;
+      overflow-x: hidden;
+      min-height: 100vh;
+      direction: ltr;
+    }
+
+    /* Header */
+    .header {
       position: fixed;
       top: 0;
       left: 0;
-      z-index: -2;
-      width: 100%;
-      height: 100%;
+      right: 0;
+      height: 60px;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
     }
 
-    #viewer {
-      width: 65vw;
-      height: 90vh;
-      margin: 5vh auto;
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ff77ff;
+      text-shadow: 0 0 20px rgba(255, 119, 255, 0.5);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .toggle-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-btn:hover {
+      background: rgba(255, 119, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 119, 255, 0.3);
+    }
+
+    .toggle-btn.active {
+      background: rgba(255, 119, 255, 0.3);
+      border-color: #ff77ff;
+    }
+
+    /* Main Layout */
+    .main-container {
+      display: grid;
+      grid-template-columns: 300px 1fr 300px;
+      grid-template-rows: 60px 1fr auto;
+      grid-template-areas:
+        "header header header"
+        "left viewer right"
+        "footer footer footer";
+      min-height: 100vh;
+      gap: 20px;
+      padding: 20px;
+      padding-top: 80px;
+    }
+
+    /* Panels */
+    .panel {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 20px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
-      box-shadow: 0 0 40px rgba(180, 100, 255, 0.3);
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    #leftPanel, #rightPanel, #infoPanel {
-      position: fixed;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 15px;
-      padding: 15px;
-      backdrop-filter: blur(15px);
-      box-shadow: 0 0 15px rgba(190, 120, 255, 0.2);
-      transition: all 0.3s;
-      max-height: 85vh;
+      max-height: calc(100vh - 120px);
       overflow-y: auto;
     }
 
-    #leftPanel { left: 20px; width: 280px; }
-    #rightPanel { right: 20px; width: 280px; }
-    #infoPanel { right: 320px; width: 300px; display: none; }
-
-    #leftPanel h3, #rightPanel h3, #infoPanel h3 {
-      color: #d5aaff;
-      text-align: center;
-      margin-top: 0;
+    .panel.collapsed {
+      width: 60px;
+      padding: 20px 10px;
+      opacity: 0.7;
     }
 
+    .panel.collapsed .panel-content {
+      display: none;
+    }
+
+    .panel.collapsed .panel-header {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      white-space: nowrap;
+    }
+
+    .panel-header {
+      font-size: 18px;
+      font-weight: 600;
+      color: #ff77ff;
+      margin-bottom: 15px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .panel-content {
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Left Panel */
+    .left-panel {
+      grid-area: left;
+    }
+
+    /* Viewer */
+    .viewer-container {
+      grid-area: viewer;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      position: relative;
+      min-height: 500px;
+    }
+
+    #viewer {
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+    }
+
+    /* Right Panel */
+    .right-panel {
+      grid-area: right;
+    }
+
+#infoPanel {
+  position: fixed;
+  top: 50%;
+  right: 360px; /* بجانب القايمة اليمنى */
+  width: 360px;
+  height: 65%; /* ✅ الطول أقل من الشاشة */
+  background: rgba(20, 10, 35, 0.96);
+  color: #fff;
+  padding: 25px;
+  overflow-y: auto;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.6);
+  transform: translate(120%, -50%);
+  opacity: 0;
+  transition: all 0.5s ease;
+  z-index: 999;
+  border-left: 2px solid #ffb6ea;
+  border-radius: 20px;
+  pointer-events: none;
+}
+#infoPanel::-webkit-scrollbar {
+  width: 6px;
+}
+#infoPanel::-webkit-scrollbar-thumb {
+  background: #ffb6ea;
+  border-radius: 10px;
+}
+#infoPanel h3 {
+  color: #ffb6ea;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+#infoPanel p {
+  line-height: 1.6;
+  color: #e0d6ff;
+}
+
+/* لما تظهر */
+#infoPanel.show {
+  transform: translate(0, -50%);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translate(-50%, -60%); }
+      to { opacity: 1; transform: translate(-50%, -50%); }
+    }
+
+    /* Buttons */
     .part-btn {
       display: block;
       width: 100%;
       text-align: center;
-      margin: 6px 0;
-      padding: 8px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      border-radius: 10px;
-      color: #fff;
+      margin: 8px 0;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      color: #ffffff;
       cursor: pointer;
-      font-size: 15px;
+      font-size: 14px;
+      font-weight: 500;
       transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
 
     .part-btn:hover {
-      background: rgba(200, 150, 255, 0.3);
-      transform: scale(1.05);
-      color: #ffe6ff;
+      background: linear-gradient(135deg, rgba(255, 119, 255, 0.3), rgba(180, 100, 255, 0.2));
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 119, 255, 0.3);
+      color: #ffffff;
     }
 
-    #bottomBar {
-      position: fixed;
-      bottom: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 25px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 30px;
-      padding: 10px 25px;
-      box-shadow: 0 0 15px rgba(180, 100, 255, 0.3);
+    .menu-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin: 15px 0;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, rgba(120, 80, 200, 0.3), rgba(80, 60, 150, 0.2));
+      border: 1px solid rgba(180, 120, 255, 0.4);
+      border-radius: 15px;
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
       backdrop-filter: blur(10px);
-      z-index: 10;
+    }
+
+    .menu-btn:hover {
+      background: linear-gradient(135deg, rgba(150, 100, 255, 0.5), rgba(120, 80, 200, 0.3));
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(150, 100, 255, 0.4);
+    }
+
+    /* Footer */
+    .footer {
+      grid-area: footer;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      margin-top: 20px;
     }
 
     .icon-btn {
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
       cursor: pointer;
-      transition: transform 0.3s, color 0.3s;
+      font-size: 20px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(10px);
     }
 
     .icon-btn:hover {
-      transform: scale(1.2);
-      color: #dcaeff;
+      background: rgba(255, 119, 255, 0.2);
+      transform: scale(1.1);
+      box-shadow: 0 5px 15px rgba(255, 119, 255, 0.3);
     }
 
-    #infoPanel p, #infoPanel h4 {
-      line-height: 1.7;
-      font-size: 15px;
-      color: #eee;
-      margin: 8px 0;
+    /* Gallery */
+    .gallery-container {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-width: 800px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      z-index: 1500;
+      display: none;
+      max-height: 200px;
+      overflow-x: auto;
+    }
+
+    .gallery-container.show {
       display: block;
-      text-align: right;
+      animation: slideDown 0.4s ease;
     }
 
-    #infoPanel img {
-      width: 100%;
-      border-radius: 10px;
-      margin-top: 10px;
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .gallery-title {
+      color: #ff77ff;
+      font-size: 20px;
+      font-weight: 600;
       margin-bottom: 15px;
-      display: block;
+      text-align: center;
     }
 
-    #infoText div {
-      display: block;
-      margin-bottom: 18px;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
+    .gallery {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
       padding-bottom: 10px;
     }
 
-    hr {
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.2);
-      margin: 15px 0;
+    .gallery-img {
+      width: 80px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
     }
 
-    #leftPanel p {
-      white-space: pre-wrap;
-      line-height: 1.7;
-      font-size: 14px;
+    .gallery-img:hover {
+      transform: scale(1.2);
+      box-shadow: 0 5px 15px rgba(255, 119, 255, 0.4);
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 3000;
+    }
+
+    .overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .overlay img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      transition: transform 0.3s ease;
+    }
+
+    .overlay.show img {
+      transform: scale(1);
+    }
+
+    .overlay .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    .overlay .close-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: scale(1.1);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .main-container {
+        grid-template-columns: 250px 1fr 250px;
+        gap: 15px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .main-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: 60px auto auto auto;
+        grid-template-areas:
+          "header"
+          "viewer"
+          "left"
+          "right";
+        padding: 10px;
+        gap: 15px;
+      }
+
+      .panel {
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      .header {
+        padding: 0 15px;
+      }
+
+      .header-title {
+        font-size: 18px;
+      }
+
+      .header-controls {
+        gap: 10px;
+      }
+
+      .toggle-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+
+      .gallery-container {
+        width: 95%;
+      }
+    }
+
+    /* Scrollbar */
+    .panel::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .panel::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .panel::-webkit-scrollbar-thumb {
+      background: #ff77ff;
+      border-radius: 4px;
+      box-shadow: 0 0 6px rgba(255, 119, 255, 0.5);
+    }
+
+    .panel::-webkit-scrollbar-thumb:hover {
+      background: #ff55ee;
+    }
+
+    /* Animations */
+    .fade-in {
+      animation: fadeIn 0.6s ease;
+    }
+
+    .slide-up {
+      animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Highlights */
+    .highlight {
+      color: #ff77ff;
+      font-weight: bold;
+      background: linear-gradient(135deg, rgba(255, 119, 255, 0.2), rgba(180, 100, 255, 0.1));
+      padding: 2px 6px;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(255, 119, 255, 0.3);
+    }
+
+    .highlight-section {
+      color: #ffa07a;
+      font-weight: bold;
+      border-right: 3px solid #ff77ff;
+      padding-right: 8px;
+      margin: 15px 0 8px 0;
+    }
+
+    .highlight-yellow {
+      color: #ffcc00;
+      font-weight: bold;
+    }
+
+    .highlight-cyan {
+      color: #7ef3ff;
+      font-weight: 600;
+      background: rgba(126, 243, 255, 0.1);
+      padding: 2px 4px;
+      border-radius: 3px;
     }
   </style>
 </head>
 <body>
+  <!-- Header -->
+  <header class="header">
+    <h1 class="header-title">🔬 Histology - Urinary Bladder</h1>
+    <div class="header-controls">
+      <button class="toggle-btn" id="toggleLeft" title="Tissue Explanation">
+        <span>📖</span> Explanation
+      </button>
+      <button class="toggle-btn" id="toggleRight" title="Tissue Parts">
+        <span>🧩</span> Parts
+      </button>
+      <button class="toggle-btn" id="toggleGallery" title="Slides">
+        <span>🖼️</span> Slides
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    <!-- Left Panel -->
+    <aside class="panel left-panel" id="leftPanel">
+      <div class="panel-header">
+        <span>🔬</span> Tissue Explanation
+      </div>
+      <div class="panel-content">
+        <p>
+          <span class="highlight">Urinary Bladder</span>
+
+          The urinary bladder is a distensible reservoir for urine, located in the pelvis, posterior to the pubic symphysis; its size and shape change as it fills. It contains three openings, two for the ureters (ureteric orifices) and one for the urethra (internal urethral orifice). The triangular region defined by these three openings, the trigone, is relatively smooth and constant in thickness, whereas the rest of the bladder wall is thick and folded when the bladder is empty and thin and smooth when the bladder is distended. These differences reflect the embryologic origins of the trigone and the rest of the bladder wall: The trigone is derived from the embryonic mesonephric ducts, and the major portion of the wall originates from the cloaca.
+
+          <div class="highlight-section">Smooth Muscle & Nervous System</div>
+          The smooth muscle of the bladder wall forms the detrusor muscle. Toward the opening of the urethra, the muscle fibers form the involuntary internal urethral sphincter, a ring-like arrangement of muscle around the opening of the urethra. The smooth muscle bundles of the detrusor muscle are less regularly arranged than that of the tubular portions of the excretory passages, and thus the muscle and collagen bundles are randomly mixed. Contraction of the detrusor muscle of the bladder compresses the entire organ and forces the urine into the urethra.
+
+          The bladder is innervated by both sympathetic and parasympathetic divisions of the autonomic nervous system:
+          • Sympathetic fibers form a plexus in the adventitia of the bladder wall. These fibers probably innervate blood vessels in the wall.
+          • Parasympathetic fibers originate from S2 to S4 segments of the spinal cord and travel with pelvic splanchnic nerves into the bladder. They end in terminal ganglia in the muscle bundles and the adventitia and are the efferent fibers of the micturition reflex.
+          • Sensory fibers from the bladder to the sacral portion of the spinal cord are the afferent fibers of the micturition reflex.
+
+          <div class="highlight-cyan">*Source: Histology: A Text and Atlas, with Correlated Cell and Molecular Biology, 7th Edition*</div>
+          <hr>
+
+          <div class="highlight-section">Epithelium & Lamina Propria</div>
+          The bladder is lined internally by transitional epithelium. Depending on the degree of filling, the number of cell layers visible in the epithelium ranges from 2–3 in the distended bladder to 10–14 in the contracted state. Specialisations of the epithelium serve to protect the underlying tissues against the hypertonic urine. The outer layer of the trilaminar plasmalemma (unit membrane) is thickened. The cellular barrier is reinforced by bundles of subplasmalemmal filaments and membrane vesicles (crusta).
+
+          The lamina propria consists of a connective tissue lattice containing delicate elastic fibres. Together with the submucosa, the lamina propria forms a mobile, displaceable layer that facilitates the alternate folding and stretching of the bladder wall. The lamina propria and submucosa are typically separated by a lamina muscularis mucosae. Bundles of elastic fibres provide mechanical reinforcement at the neck of the bladder. Lymphoid follicles may be present in the lamina propria.
+
+          <div class="highlight-cyan">Source: Veterinary Histology of Domestic Mammals and Birds, 5th Edition (Textbook and Color Atlas)*</div>
+          <hr>
+
+          <span class="highlight-yellow">Under the light microscope</span>, the urothelium, lamina propria, muscularis propria, and serosa may be seen in a histological section of the bladder wall. The urothelium's most superficial layer comprises dome-shaped umbrella cells whose shape becomes flat in a distended bladder. The cells of this layer are often multinucleated. Below the umbrella cells, the urothelium contains the multi-cell-layered intermediate and a single-cell layer of basal cells contacting its basement membrane.
+
+          <div class="highlight-section">Pathophysiology</div>
+          Urge incontinence, a form of urinary incontinence, is characterized by urinary urgency. Etiologies for urge incontinence include neurogenic, myogenic, or idiopathic causes. Disruption or damage of autonomic nerves or nerve signaling to the bladder cells may result in conditions including overactive bladder or bladder pain syndrome.
+
+          <div class="highlight-section">Clinical Significance</div>
+          Clinicians use cystoscopy to examine the urinary bladder mucosa for pathologic lesions, which may be diagnosed via biopsy sampling. Benign lesions include von Brunn's nests. These islands or nests of the urothelium are separated from the luminal surface and consequently found within the lamina propria. Von Brunn's nests of benign urothelium may undergo degeneration to form cysts (cystitis cystica).
+
+          After prostate cancer, the second most common type of malignancy in the genitourinary tract is bladder cancer. Urothelial carcinomas are the most frequently diagnosed type of bladder cancer and are graded based on their depth of invasion into the bladder wall. Clinically 75%-85% of urothelial carcinomas are superficial, and 15%-25% of the cases are invasive and metastatic at the time of initial diagnosis. Depending on the risk classification, non-muscle invasive neoplasms are treated with endoscopic reactions. However, more aggressive treatment options, including radical cystectomy, are preferred for patients with muscle-invasive histology.
+
+          <div class="highlight-cyan">Source: National Center for Biotechnology Information (NCBI) Bookshelf*</div>
+          <hr>
+
+          The urinary bladder is lined by urothelium, a specialised epithelium with number of cell layers depending upon whether the bladder is stretched or unstretched. There are elastic fibres in the lamina propria. Small bundles of smooth muscle form a discontinuous lamina muscularis except in the cat. The muscularis (detrusor muscle) is the same as in the ureter, and the outer layer may similarly be adventitia or serosa. Parasympathetic ganglia and nerve receptors are present.
+
+          <div class="highlight-cyan">*Source: Aughey and Frye's Comparative Veterinary Histology with Clinical Correlates, 2nd Edition*</div>
+        </p>
+      </div>
+    </aside>
+
+    <!-- Viewer -->
+    <main class="viewer-container">
+      <div id="viewer"></div>
+    </main>
+
+    <!-- Right Panel -->
+    <aside class="panel right-panel" id="rightPanel">
+      <div class="panel-header">
+        <span>🧩</span> Tissue Parts
+      </div>
+      <div class="panel-content">
+        <div id="partsList">Loading...</div>
+      </div>
+    </aside>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <button class="icon-btn" onclick="resetCamera()" title="Reset Camera">🎥</button>
+      <button class="icon-btn" onclick="highlightRandom()" title="Random Highlight">🎲</button>
+      <button class="icon-btn" onclick="goToMicroscop()" title="Show Microscope">🔬</button>
+    </footer>
+  </div>
+
+  <!-- Info Panel -->
+  <div class="info-panel" id="infoPanel">
+    <div class="panel-header">
+      <span id="infoTitle">Part Details</span>
+      <button class="close-btn" onclick="closeInfoPanel()">✖</button>
+    </div>
+    <div id="infoText">Select a part from the tissue parts list to view details...</div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="gallery-container" id="galleryContainer">
+    <div class="gallery-title">Microscopic Slides</div>
+    <div class="gallery" id="gallery">
+      <img src="1.jpg" alt="Slide 1" class="gallery-img">
+      <img src="2.jpg" alt="Slide 2" class="gallery-img">
+      <img src="3.jpg" alt="Slide 3" class="gallery-img">
+      <img src="4.jpg" alt="Slide 4" class="gallery-img">
+      <img src="5.jpg" alt="Slide 5" class="gallery-img">
+      <img src="6.jpg" alt="Slide 6" class="gallery-img">
+      <img src="7.jpg" alt="Slide 7" class="gallery-img">
+      <img src="8.jpg" alt="Slide 8" class="gallery-img">
+      <img src="9.jpg" alt="Slide 9" class="gallery-img">
+      <img src="10.jpg" alt="Slide 10" class="gallery-img">
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay">
+    <button class="close-btn" onclick="closeOverlay()">✖</button>
+    <img id="overlayImg" src="" alt="">
+  </div>
+
+  <!-- Background Canvas -->
   <canvas id="bgCanvas"></canvas>
 
-  <div id="leftPanel">
-    <h3>🔬Tissue explanation</h3>
-    <p>
-      <span class="highlight">Urinary Bladder</span>
-
-      The urinary bladder is a distensible reservoir for urine, located in the pelvis, posterior to the pubic symphysis; its size and shape change as it fills. It contains three openings, two for the ureters (ureteric orifices) and one for the urethra (internal urethral orifice). The triangular region defined by these three openings, the trigone, is relatively smooth and constant in thickness, whereas the rest of the bladder wall is thick and folded when the bladder is empty and thin and smooth when the bladder is distended. These differences reflect the embryologic origins of the trigone and the rest of the bladder wall: The trigone is derived from the embryonic mesonephric ducts, and the major portion of the wall originates from the cloaca.
-
-      <span class="highlight-section">Smooth Muscle & Nervous System</span>
-      The smooth muscle of the bladder wall forms the detrusor muscle. Toward the opening of the urethra, the muscle fibers form the involuntary internal urethral sphincter, a ring-like arrangement of muscle around the opening of the urethra. The smooth muscle bundles of the detrusor muscle are less regularly arranged than that of the tubular portions of the excretory passages, and thus the muscle and collagen bundles are randomly mixed. Contraction of the detrusor muscle of the bladder compresses the entire organ and forces the urine into the urethra.
-
-      The bladder is innervated by both sympathetic and parasympathetic divisions of the autonomic nervous system:
-      • Sympathetic fibers form a plexus in the adventitia of the bladder wall. These fibers probably innervate blood vessels in the wall.
-      • Parasympathetic fibers originate from S2 to S4 segments of the spinal cord and travel with pelvic splanchnic nerves into the bladder. They end in terminal ganglia in the muscle bundles and the adventitia and are the efferent fibers of the micturition reflex.
-      • Sensory fibers from the bladder to the sacral portion of the spinal cord are the afferent fibers of the micturition reflex.
-
-      <span class="highlight-cyan">*Source: Histology: A Text and Atlas, with Correlated Cell and Molecular Biology, 7th Edition*</span> 
-      <hr>
-
-      <span class="highlight-section">Epithelium & Lamina Propria</span>
-      The bladder is lined internally by transitional epithelium. Depending on the degree of filling, the number of cell layers visible in the epithelium ranges from 2–3 in the distended bladder to 10–14 in the contracted state. Specialisations of the epithelium serve to protect the underlying tissues against the hypertonic urine. The outer layer of the trilaminar plasmalemma (unit membrane) is thickened. The cellular barrier is reinforced by bundles of subplasmalemmal filaments and membrane vesicles (crusta).
-
-      The lamina propria consists of a connective tissue lattice containing delicate elastic fibres. Together with the submucosa, the lamina propria forms a mobile, displaceable layer that facilitates the alternate folding and stretching of the bladder wall. The lamina propria and submucosa are typically separated by a lamina muscularis mucosae. Bundles of elastic fibres provide mechanical reinforcement at the neck of the bladder. Lymphoid follicles may be present in the lamina propria.
-
-      <span class="highlight-cyan">Source: Veterinary Histology of Domestic Mammals and Birds, 5th Edition (Textbook and Color Atlas)*</span> 
-      <hr>
-
-      <span class="highlight-yellow">Under the light microscope</span>, the urothelium, lamina propria, muscularis propria, and serosa may be seen in a histological section of the bladder wall. The urothelium's most superficial layer comprises dome-shaped umbrella cells whose shape becomes flat in a distended bladder. The cells of this layer are often multinucleated. Below the umbrella cells, the urothelium contains the multi-cell-layered intermediate and a single-cell layer of basal cells contacting its basement membrane.
-
-      <span class="highlight-section">Pathophysiology</span>
-      Urge incontinence, a form of urinary incontinence, is characterized by urinary urgency. Etiologies for urge incontinence include neurogenic, myogenic, or idiopathic causes. Disruption or damage of autonomic nerves or nerve signaling to the bladder cells may result in conditions including overactive bladder or bladder pain syndrome.
-
-      <span class="highlight-section">Clinical Significance</span>
-      Clinicians use cystoscopy to examine the urinary bladder mucosa for pathologic lesions, which may be diagnosed via biopsy sampling. Benign lesions include von Brunn’s nests. These islands or nests of the urothelium are separated from the luminal surface and consequently found within the lamina propria. Von Brunn’s nests of benign urothelium may undergo degeneration to form cysts (cystitis cystica).
-
-      After prostate cancer, the second most common type of malignancy in the genitourinary tract is bladder cancer. Urothelial carcinomas are the most frequently diagnosed type of bladder cancer and are graded based on their depth of invasion into the bladder wall. Clinically 75%-85% of urothelial carcinomas are superficial, and 15%-25% of the cases are invasive and metastatic at the time of initial diagnosis. Depending on the risk classification, non-muscle invasive neoplasms are treated with endoscopic reactions. However, more aggressive treatment options, including radical cystectomy, are preferred for patients with muscle-invasive histology.
-
-      <span class="highlight-cyan">Source: National Center for Biotechnology Information (NCBI) Bookshelf*</span>
-      <hr> 
-
-      The urinary bladder is lined by urothelium, a specialised epithelium with number of cell layers depending upon whether the bladder is stretched or unstretched. There are elastic fibres in the lamina propria. Small bundles of smooth muscle form a discontinuous lamina muscularis except in the cat. The muscularis (detrusor muscle) is the same as in the ureter, and the outer layer may similarly be adventitia or serosa. Parasympathetic ganglia and nerve receptors are present.
-
-      <span class="highlight-cyan">*Source: Aughey and Frye’s Comparative Veterinary Histology with Clinical Correlates, 2nd Edition* </span> 
-    </p>
-  </div>
-  </div>
-
-  <div id="rightPanel">
-    <h3> Parts of tissue</h3>
-    <div id="partsList">loading..</div>
-  </div>
-
-  <div id="infoPanel">
-    <h3 id="infoTitle"> Part details</h3>
-    <div id="infoText">Select a part from the View Details list..</div>
-  </div>
-
-  <div id="viewer"></div>
-
-  <div id="bottomBar">
-    <button class="icon-btn" onclick="resetCamera()">🔄</button>
-    
-    <button class="icon-btn" onclick="goToMicroscop()">🔬</button>
-  </div>
-
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 
   <script>
+    // Variables
     let scene, camera, renderer, controls, model;
     const viewer = document.getElementById("viewer");
     const partsList = document.getElementById("partsList");
@@ -224,59 +680,102 @@
     const infoText = document.getElementById("infoText");
     let currentOpen = null;
 
+    // Part data
     const partData = {
-      "Basal_lamina": { details: [{ title: "Description ", text: `Thin layer of proteins under epithelial cells.
+      "Basal_lamina": {
+        details: [{
+          title: "Description",
+          text: `A thin layer of proteins under the epithelial cells.
 
-Supports cells and helps filter substances between cells and connective tissue`, img: "images/crypt_of_lieberkuhn.jpg" }] },
-       "Relaxed_transitional_epithelium": { details: [{ title: "Description ", text: `    Special epithelium in bladder and urinary tract, stretches when filled.
+It supports the cells and helps in filtering substances between the cells and connective tissue.`
+        }]
+      },
+      "Relaxed_transitional_epithelium": {
+        details: [{
+          title: "Description",
+          text: `Special transitional epithelium in the bladder and urinary system, expands when full.
 
-Cells appear rounded or cuboidal when empty, flatten when stretched   .`, img: "images/crypt_of_lieberkuhn.jpg" }] },
-      "Columnar_cell": { details: [{ title: " Description", text: `Tall, vertical-shaped cells, found in intestines and stomach.
+Cells appear round or cuboidal when empty, flatten when stretched.`
+        }]
+      },
+      "Columnar_cell": {
+        details: [{
+          title: "Description",
+          text: `Long-shaped cells, found in the intestines and stomach.
 
-Main function: absorption and secretion, sometimes have microvilli to increase surface area`, img: "images/enterocyte.jpg" }] },
-      "Cuboidal_cell": { details: [{ title: " Description", text: `Cube-shaped cells, found in glands or kidney tubules.
+Main function: Absorption and secretion, sometimes contain microvilli to increase absorption surface.`
+        }]
+      },
+      "Cuboidal_cell": {
+        details: [{
+          title: "Description",
+          text: `Cube-shaped cells, found in glands or kidney tubules.
 
-Function: secretion or absorption depending on location.`, img: "images/inflammatory_cell.jpg" }] },
-      "Umbralla_cell": { details: [{ title: " Description", text: `Top layer of transitional epithelium in the bladder.
+Function: Secretion or absorption depending on location.`
+        }]
+      },
+      "Umbralla_cell": {
+        details: [{
+          title: "Description",
+          text: `The upper layer of transitional epithelium in the bladder.
 
-Protects underlying cells from urine, flat when bladder is full, acts like a protective “umbrella .`, img: "goblet_cell.jpg" }] }
-      
+Protects the basal cells from urine, flattened when the bladder is full, acts as a protective umbrella.`
+        }]
+      }
     };
 
+    // Initialize
     init();
     loadModel();
     animateBackground();
+    setupEventListeners();
 
     function init() {
+      // Scene
       scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x000000, 5, 15);
+
+      // Camera
       camera = new THREE.PerspectiveCamera(60, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
       camera.position.set(0, 1, 5);
 
+      // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(viewer.clientWidth, viewer.clientHeight);
       renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
       viewer.appendChild(renderer.domElement);
 
-      const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
-      dirLight.position.set(4, 4, 6);
-      scene.add(ambient, dirLight);
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+      scene.add(ambientLight);
 
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(4, 4, 6);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.mapSize.width = 2048;
+      directionalLight.shadow.mapSize.height = 2048;
+      scene.add(directionalLight);
+
+      const pointLight = new THREE.PointLight(0xff77ff, 0.5, 10);
+      pointLight.position.set(-2, 2, 2);
+      scene.add(pointLight);
+
+      // Controls
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
       controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.3;
+      controls.autoRotateSpeed = 0.5;
+      controls.minDistance = 2;
+      controls.maxDistance = 10;
 
+      // Window resize
       window.addEventListener("resize", onWindowResize);
-
-      document.addEventListener("click", (e) => {
-        const panels = [infoPanel, document.getElementById("rightPanel"), document.getElementById("leftPanel")];
-        if (!panels.some(p => p.contains(e.target))) {
-          infoPanel.style.display = "none";
-          currentOpen = null;
-          clearHighlight();
-        }
-      });
     }
 
     function loadModel() {
@@ -286,29 +785,62 @@ Protects underlying cells from urine, flat when bladder is full, acts like a pro
         (gltf) => {
           model = gltf.scene;
           scene.add(model);
+
+          // Center and scale
           const box = new THREE.Box3().setFromObject(model);
           const center = box.getCenter(new THREE.Vector3());
-          model.position.sub(center);
-          model.scale.setScalar(1.1);
-          model.traverse(c => {
-            if(c.isMesh) c.material = c.material.clone();
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 2 / maxDim;
+          model.scale.setScalar(scale);
+          model.position.sub(center.multiplyScalar(scale));
+
+          // Enable shadows
+          model.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              child.material = child.material.clone();
+            }
           });
+
           generatePartsList(model);
           animate();
         },
-        undefined,
-        (err) => console.error("خطأ تحميل الموديل:", err)
+        (progress) => {
+          console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+        },
+        (error) => {
+          console.error("Error loading model:", error);
+        }
       );
     }
 
     function generatePartsList(model) {
       const meshes = [];
-      model.traverse(c => c.isMesh && !c.name.toLowerCase().includes("object") && meshes.push(c));
+      model.traverse(c => {
+        if (c.isMesh && !c.name.toLowerCase().includes("object")) {
+          meshes.push(c);
+        }
+      });
+
       partsList.innerHTML = "";
+
+      // Show All button
+      const menuBtn = document.createElement("button");
+      menuBtn.className = "menu-btn";
+      menuBtn.textContent = "Show All Parts";
+      menuBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        clearHighlight();
+      };
+      partsList.appendChild(menuBtn);
+
+      // Part buttons
       meshes.forEach(m => {
         const btn = document.createElement("button");
         btn.className = "part-btn";
-        btn.textContent = m.name;
+        btn.textContent = m.name.replace(/_/g, " ");
         btn.onclick = (ev) => {
           ev.stopPropagation();
           highlightPart(m);
@@ -318,464 +850,239 @@ Protects underlying cells from urine, flat when bladder is full, acts like a pro
       });
     }
 
-    function clearHighlight() {
-      if (!model) return;
-      model.traverse(c => {
-        if (c.isMesh && c.material?.emissive) {
-          c.material.emissive.set(0x000000);
+   function clearHighlight() {
+  if (!model) return;
+  model.traverse(c => {
+    if (c.isMesh && c.material) {
+      // ✅ رجّع اللون الأصلي لو محفوظ
+      if (c.userData.originalColor) {
+        c.material.color.copy(c.userData.originalColor);
+      }
+      c.material.emissive.setHex(0x000000);
+      c.material.opacity = 1;
+      c.material.transparent = false;
+    }
+  });
+  currentOpen = null;
+}
+
+
+    function highlightPart(mesh) {
+      clearHighlight();
+      if (mesh.material?.emissive) {
+        mesh.material.emissive.set(0x4444ff);
+      }
+    }
+function highlightPart(mesh) {
+  clearHighlight();
+  
+  // ✅ لون وردي فاتح غير شفاف
+  const highlightColor = new THREE.Color(0xffa6d1);
+
+  // خزن اللون الأصلي عشان نقدر نرجعه بعدين
+  if (!mesh.userData.originalColor) {
+    mesh.userData.originalColor = mesh.material.color.clone();
+  }
+
+  // غيّر اللون بدون شفافية
+  mesh.material.color.set(highlightColor);
+  mesh.material.emissive.set(0xff99cc);
+  mesh.material.emissiveIntensity = 0.4;
+  mesh.material.transparent = false; // ❌ بدون شفافية
+  mesh.material.opacity = 1;
+
+  currentOpen = mesh;
+}
+
+
+
+    function closeInfoPanel() {
+      infoPanel.classList.remove("show");
+      currentOpen = null;
+    }
+
+    function setupEventListeners() {
+      // Panel toggles
+      document.getElementById("toggleLeft").addEventListener("click", () => {
+        togglePanel("leftPanel");
+      });
+
+      document.getElementById("toggleRight").addEventListener("click", () => {
+        togglePanel("rightPanel");
+      });
+
+      document.getElementById("toggleGallery").addEventListener("click", () => {
+        toggleGallery();
+      });
+
+      // Gallery
+      document.querySelectorAll(".gallery-img").forEach(img => {
+        img.addEventListener("click", () => {
+          openOverlay(img.src);
+        });
+      });
+
+      // Overlay
+      document.getElementById("overlay").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("overlay")) {
+          closeOverlay();
+        }
+      });
+
+      // Click outside panels to close info
+      document.addEventListener("click", (e) => {
+        if (!infoPanel.contains(e.target) && !document.querySelector(".right-panel").contains(e.target)) {
+          closeInfoPanel();
         }
       });
     }
 
-    function highlightPart(mesh) {
-      clearHighlight();
-      if(mesh.material?.emissive) {
-        mesh.material.emissive.set(0xff77ff);
-      }
+    function togglePanel(panelId) {
+      const panel = document.getElementById(panelId);
+      const toggleBtn = document.getElementById(`toggle${panelId.charAt(0).toUpperCase() + panelId.slice(1)}`);
+
+      panel.classList.toggle("collapsed");
+      toggleBtn.classList.toggle("active");
     }
 
-    function showPartInfo(partName) {
-      const data = partData[partName];
-      if (currentOpen === partName) {
-        infoPanel.style.display = "none";
-        clearHighlight();
-        currentOpen = null;
-        return;
-      }
-      infoTitle.textContent = partName;
-      infoText.innerHTML = "";
+    function toggleGallery() {
+      const gallery = document.getElementById("galleryContainer");
+      const toggleBtn = document.getElementById("toggleGallery");
 
-      if (data && data.details) {
-        data.details.forEach((item) => {
-          const section = document.createElement("div");
-          section.innerHTML = `<h4>${item.title}</h4><p>${item.text.replace(/\n/g, "<br>")}</p>${item.img ? `<img src="${item.img}" alt="">` : ""}`;
-          infoText.appendChild(section);
-        });
-      } else {
-        infoText.innerHTML = `<p>لا توجد بيانات هستولوجية لـ ${partName}</p>`;
-      }
-
-      infoPanel.style.display = "block";
-      currentOpen = partName;
+      gallery.classList.toggle("show");
+      toggleBtn.classList.toggle("active");
     }
 
-    function resetCamera() { controls.reset(); }
+    function openOverlay(src) {
+      const overlay = document.getElementById("overlay");
+      const overlayImg = document.getElementById("overlayImg");
+
+      overlayImg.src = src;
+      overlay.classList.add("show");
+    }
+
+    function closeOverlay() {
+      document.getElementById("overlay").classList.remove("show");
+    }
+
+    function resetCamera() {
+      controls.reset();
+    }
+
     function highlightRandom() {
+      if (!model) return;
       const meshes = [];
       model.traverse(c => c.isMesh && meshes.push(c));
-      const chosen = meshes[Math.floor(Math.random() * meshes.length)];
-      highlightPart(chosen);
-      showPartInfo(chosen.name);
+      if (meshes.length > 0) {
+        const randomMesh = meshes[Math.floor(Math.random() * meshes.length)];
+        highlightPart(randomMesh);
+        showPartInfo(randomMesh.name);
+      }
     }
-    function goToMicroscop() { window.open("https://histologyguide.com/slideview/MH-147-bladder/16-slide-1.html", "_blank"); }
-    function onWindowResize() { camera.aspect = viewer.clientWidth / viewer.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(viewer.clientWidth, viewer.clientHeight); }
-    function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+        function clearHighlight() {
+      if (!model) return;
+      model.traverse(c => {
+        if (c.isMesh && c.material) {
+          c.material.emissive.setHex(0x000000);
+          c.material.opacity = 1;
+          c.material.transparent = false;
+        }
+      });
+      currentOpen = null;
+    }
 
+   function highlightPart(mesh) {
+  clearHighlight();
+  const pink = new THREE.Color(0xffa6d1); // لون وردي خفيف
+  mesh.material.emissive.set(pink);
+  mesh.material.transparent = true;
+  mesh.material.opacity = 0.7;
+  currentOpen = mesh;
+}
+
+
+    function showPartInfo(name) {
+      const part = partData[name];
+      if (!part) {
+        infoTitle.textContent = name.replace(/_/g, " ");
+        infoText.textContent = "No information available.";
+      } else {
+        infoTitle.textContent = name.replace(/_/g, " ");
+        infoText.innerHTML = part.details.map(d => `
+          <div class="fade-in">
+            <div class="highlight-section">${d.title}</div>
+            <p>${d.text}</p>
+          </div>
+        `).join("");
+      }
+      infoPanel.classList.add("show");
+    }
+
+    function closeInfoPanel() {
+      infoPanel.classList.remove("show");
+    }
+
+    function onWindowResize() {
+      camera.aspect = viewer.clientWidth / viewer.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // 🔮 خلفية متحركة جميلة بالخلف
     function animateBackground() {
       const canvas = document.getElementById("bgCanvas");
       const ctx = canvas.getContext("2d");
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      const bubbles = Array.from({ length: 15 }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: 10 + Math.random() * 25,
-        dx: (Math.random() - 0.5) * 0.3,
-        dy: (Math.random() - 0.5) * 0.3,
-        color: `rgba(180, 120, 255, 0.15)`
-      }));
+      let w, h, particles = [];
 
-      function loop() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let b of bubbles) {
-          ctx.beginPath();
-          ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-          ctx.fillStyle = b.color;
-          ctx.fill();
-          b.x += b.dx;
-          b.y += b.dy;
-          if (b.x < 0 || b.x > canvas.width) b.dx *= -1;
-          if (b.y < 0 || b.y > canvas.height) b.dy *= -1;
-        }
-        requestAnimationFrame(loop);
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        particles = Array.from({ length: 80 }, () => ({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 2 + 1,
+          dx: Math.random() * 1 - 0.5,
+          dy: Math.random() * 1 - 0.5
+        }));
       }
-      loop();
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = "#ff77ff";
+        particles.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          p.x += p.dx;
+          p.y += p.dy;
+          if (p.x < 0 || p.x > w) p.dx *= -1;
+          if (p.y < 0 || p.y > h) p.dy *= -1;
+        });
+        requestAnimationFrame(draw);
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+      draw();
     }
+    // إخفاء infoPanel لما تضغط في أي مكان فاضي
+document.addEventListener("click", (e) => {
+  const isInfoPanel = infoPanel.contains(e.target);
+  const isPartButton = e.target.closest(".part-button");
+  const isModelClick = e.target.tagName === "CANVAS";
+  
+  // لو مش ضغط على القايمة أو الزر أو الموديل نفسه → اقفل اللوحة
+  if (!isInfoPanel && !isPartButton && !isModelClick) {
+    infoPanel.classList.remove("show");
+  }
+});
+
   </script>
-  
-<style>
-  .highlight{
-    color: #ff77ff;
-    font-size: 18px;
-    font-weight: bold;
-    background-color: rgba(255, 255, 255, 0.1);
-    padding: 2px 4px;
-    border-radius: 3px;
-  }
-
-  .highlight-yellow {
-    color: #ffcc00;
-    font-size: 20px;
-    font-style: inherit;
-   
-  }
-
-  .highlight-cyan {
-    color: #7ef3ff;
-    font-size: 16px;
-    font-weight: 600;
-    background-color: rgba(0,255,255,0.1);
-    padding: 1px 3px;
-    border-radius: 2px;
-  }
-    .highlight-section {
-      color: #ffa07a;
-      font-size: 17px;
-      font-weight: bold;
-      border-left: 3px solid #ff77ff;
-      padding-left: 6px;
-      margin-top: 10px;
-      margin-bottom: 6px;
-    }
-</style>
-<style>
-  /* ---------- Scrollbar عصري مع glow وshadow ---------- */
-
-#leftPanel::-webkit-scrollbar,
-#rightPanel::-webkit-scrollbar,
-#infoPanel::-webkit-scrollbar {
-  width: 12px;
-}
-
-/* خلفية الشريط */
-#leftPanel::-webkit-scrollbar-track,
-#rightPanel::-webkit-scrollbar-track,
-#infoPanel::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-}
-
-/* شكل المؤشر */
-#leftPanel::-webkit-scrollbar-thumb,
-#rightPanel::-webkit-scrollbar-thumb,
-#infoPanel::-webkit-scrollbar-thumb {
-  background: #ff77ff;
-  border-radius: 6px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 8px rgba(255, 119, 255, 0.5);
-  transition: all 0.3s ease;
-}
-
-/* عند مرور الماوس على المؤشر */
-#leftPanel::-webkit-scrollbar-thumb:hover,
-#rightPanel::-webkit-scrollbar-thumb:hover,
-#infoPanel::-webkit-scrollbar-thumb:hover {
-  background: #ff55ee;
-  box-shadow: 0 0 12px rgba(255, 85, 238, 0.7);
-}
-
-</style>
-<!-- ---------- Gallery أعلى الصفحة ---------- -->
- <!-- ---------- Gallery أعلى الصفحة ---------- -->
-<div id="galleryTopContainer">
-  <h2 class="gallery-title">ٍSlide</h2>
-  <div id="galleryTop" class="gallery">
-    <img src="1.jpg" alt="Image 1" class="gallery-img">
-    <img src="2.jpg" alt="Image 2" class="gallery-img">
-    <img src="3.jpg" alt="Image 3" class="gallery-img">
-    <img src="4.jpg" alt="Image 4" class="gallery-img">
-    <img src="5.jpg" alt="Image 5" class="gallery-img">
-    <img src="6.jpg" alt="Image 6" class="gallery-img">
-    <img src="7.jpg" alt="Image 7" class="gallery-img">
-    <img src="8.jpg" alt="Image 8" class="gallery-img">
-    <img src="9.jpg" alt="Image 9" class="gallery-img">
-    <img src="10.jpg" alt="Image 10" class="gallery-img">
-  </div>
-</div>
-
-<!-- ---------- Overlay للعرض الكبير ---------- -->
-<div id="overlay" class="overlay">
-  <button id="closeOverlay">✖</button>
-  <img id="overlayImg" src="" alt="">
-</div>
-
-<style>
-#galleryTopContainer {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  text-align: center;
-  width: 95%;
-  max-width: 1200px;
-}
-
-.gallery-title {
-  color: #ff77ff;
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  text-shadow: 0 0 5px rgba(255,119,255,0.6);
-}
-
-.gallery {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  background: rgba(0,0,0,0.3);
-  padding: 12px 15px;
-  border-radius: 12px;
-  backdrop-filter: blur(5px);
-}
-
-.gallery-img {
-  width: 90px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.gallery-img:hover {
-  transform: scale(1.3);
-  box-shadow: 0 6px 20px rgba(255,119,255,0.6);
-}
-
-/* ---------- Overlay ---------- */
-.overlay {
-  position: fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background: rgba(0,0,0,0.85);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.5s ease;
-  z-index: 200;
-}
-
-.overlay.active {
-  opacity: 1;
-  visibility: visible;
-}
-
-.overlay img {
-  max-width: 80%;
-  max-height: 80%;
-  border-radius: 12px;
-  transform: scale(0.7);
-  transition: transform 0.5s ease, box-shadow 0.5s ease;
-  box-shadow: 0 0 0 rgba(0,0,0,0);
-}
-
-.overlay.active img {
-  transform: scale(1);
-  box-shadow: 0 10px 40px rgba(255,119,255,0.6);
-}
-
-#closeOverlay {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-  background: rgba(255,255,255,0.2);
-  border: none;
-  color: white;
-  font-size: 28px;
-  cursor: pointer;
-  padding: 5px 12px;
-  border-radius: 8px;
-  transition: background 0.3s, transform 0.3s;
-}
-
-#closeOverlay:hover {
-  background: rgba(255,255,255,0.5);
-  transform: scale(1.1);
-}
-</style>
-
-<script>
-const galleryImgs = document.querySelectorAll(".gallery-img");
-const overlay = document.getElementById("overlay");
-const overlayImg = document.getElementById("overlayImg");
-const closeBtn = document.getElementById("closeOverlay");
-
-galleryImgs.forEach(img => {
-  img.addEventListener("click", () => {
-    overlayImg.src = img.src;
-    overlay.classList.add("active");
-  });
-});
-
-closeBtn.addEventListener("click", () => {
-  overlay.classList.remove("active");
-});
-</script>
-<script>
-  window.addEventListener("load", () => {
-  const elements = [document.getElementById("viewer"), document.getElementById("leftPanel"), document.getElementById("rightPanel"), document.getElementById("bottomBar")];
-  
-  elements.forEach(el => {
-    el.classList.add("intro-anim");
-    // تحفيز الانتقال بعد وقت صغير لتسلسل العناصر
-    setTimeout(() => el.classList.add("active"), 100);
-  });
-});
-
-</script>
-<style>
-  /* Fade + scale intro */
-.intro-anim {
-  opacity: 0;
-  transform: scale(0.8);
-  filter: drop-shadow(0 0 0px #ff77ff);
-  transition: all 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-}
-.intro-anim.active {
-  opacity: 1;
-  transform: scale(1);
-  filter: drop-shadow(0 0 20px #ff77ff);
-}
-
-</style>
 </body>
-<!-- ---------- Buttons to toggle panels ---------- -->
-<style>
-.toggle-btn {
-  position: fixed;
-  top: 15px;
-  width: 30px;
-  height: 30px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 150;
-  transition: all 0.3s ease;
-}
-
-.toggle-btn:hover {
-  background: rgba(255, 119, 255, 0.3);
-  transform: scale(1.2);
-}
-
-#toggleLeft { left: 10px; }
-#toggleRight { right: 10px; }
-#toggleInfo { right: 330px; }
-</style>
-
-<button id="toggleLeft" class="toggle-btn">⇦</button>
-<button id="toggleRight" class="toggle-btn">⇨</button>
-<button id="toggleInfo" class="toggle-btn">ℹ</button>
-
-<script>
-const leftPanel = document.getElementById("leftPanel");
-const rightPanel = document.getElementById("rightPanel");
-const infoPanelEl = document.getElementById("infoPanel");
-
-document.getElementById("toggleLeft").addEventListener("click", () => {
-  if(leftPanel.style.display === "none"){
-    leftPanel.style.display = "block";
-  } else {
-    leftPanel.style.display = "none";
-  }
-});
-
-document.getElementById("toggleRight").addEventListener("click", () => {
-  if(rightPanel.style.display === "none"){
-    rightPanel.style.display = "block";
-  } else {
-    rightPanel.style.display = "none";
-  }
-});
-
-document.getElementById("toggleInfo").addEventListener("click", () => {
-  if(infoPanelEl.style.display === "none" || infoPanelEl.style.display === ""){
-    infoPanelEl.style.display = "block";
-  } else {
-    infoPanelEl.style.display = "none";
-  }
-});
-</script>
-<!-- ---------- زر للتحكم في Gallery ---------- -->
-<button id="toggleGallery" class="toggle-btn" style="top: 60px; left: 50%; transform: translateX(-50%);">🖼️</button>
-
-<style>
-/* ترانزيشن سلس لجميع Panels و Gallery */
-#leftPanel, #rightPanel, #infoPanel, #galleryTopContainer {
-  transition: all 0.5s ease;
-}
-
-/* عند الإغلاق نستخدم transform لتأثير الانزلاق */
-.hidden-panel {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-20px);
-}
-</style>
-
-<script>
-// تعديل أزرار الفتح/الإغلاق لتعمل مع الترنزشن
-function togglePanel(panel) {
-  if(panel.classList.contains("hidden-panel")) {
-    panel.classList.remove("hidden-panel");
-  } else {
-    panel.classList.add("hidden-panel");
-  }
-}
-
-document.getElementById("toggleLeft").addEventListener("click", () => togglePanel(leftPanel));
-document.getElementById("toggleRight").addEventListener("click", () => togglePanel(rightPanel));
-document.getElementById("toggleInfo").addEventListener("click", () => togglePanel(infoPanelEl));
-document.getElementById("toggleGallery").addEventListener("click", () => togglePanel(document.getElementById("galleryTopContainer")));
-</script>
-<style>
-/* ---------- Responsive Viewer مع Expand عند إخفاء Panels ---------- */
-@media (max-width: 768px) {
-  #viewer {
-    transition: all 0.5s ease;
-  }
-  #viewer.expanded {
-    height: 70vh; /* يزيد ارتفاع الـ Viewer عند إخفاء Panels */
-  }
-}
-</style>
-
-<script>
-// تابع لتحديث حجم الـ Viewer حسب حالة Panels على الموبايل
-function updateViewerSize() {
-  if(window.innerWidth <= 768){
-    const panels = [leftPanel, rightPanel, infoPanelEl];
-    const allHidden = panels.every(p => !p.classList.contains("active-panel"));
-    if(allHidden){
-      document.getElementById("viewer").classList.add("expanded");
-    } else {
-      document.getElementById("viewer").classList.remove("expanded");
-    }
-  }
-}
-
-// تعديل أزرار Toggle لتحديث حجم Viewer عند الفتح والغلق
-document.getElementById("toggleLeft").addEventListener("click", updateViewerSize);
-document.getElementById("toggleRight").addEventListener("click", updateViewerSize);
-document.getElementById("toggleInfo").addEventListener("click", updateViewerSize);
-document.getElementById("toggleGallery").addEventListener("click", updateViewerSize);
-
-// تحديث تلقائي عند تغيير حجم الشاشة
-window.addEventListener("resize", updateViewerSize);
-
-// تفعيل التحديث عند تحميل الصفحة
-window.addEventListener("load", updateViewerSize);
-</script>
 </html>
